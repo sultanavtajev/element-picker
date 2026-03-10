@@ -1,6 +1,6 @@
 {
   "name": "@sultanavtajev/element-picker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React dev tool for inspecting elements — hover to see component hierarchy, source path, CSS selector, and copy to clipboard",
   "type": "module",
   "main": "./dist/index.cjs",

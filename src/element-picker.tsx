@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Crosshair } from "lucide-react";
-import { toast } from "sonner";
+import type { LucideIcon } from "lucide-react";
 import {
   extractElementInfo,
   formatElementInfo,
@@ -31,6 +30,8 @@ export function ElementPicker(props: ElementPickerConfig) {
   const [hoveredRect, setHoveredRect] = useState<DOMRect | null>(null);
   const [tooltipLabel, setTooltipLabel] = useState("");
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const [CrosshairIcon, setCrosshairIcon] = useState<LucideIcon | null>(null);
+  const [Toaster, setToaster] = useState<React.ComponentType | null>(null);
 
   const extractOptions = useMemo(
     () => ({
@@ -45,6 +46,16 @@ export function ElementPicker(props: ElementPickerConfig) {
     setIsActive(false);
     setHoveredRect(null);
     setTooltipLabel("");
+  }, []);
+
+  // Lazy-load lucide-react and sonner to avoid SSR side-effects
+  useEffect(() => {
+    import("lucide-react")
+      .then((mod) => setCrosshairIcon(() => mod.Crosshair))
+      .catch(() => {});
+    import("sonner")
+      .then((mod) => setToaster(() => mod.Toaster))
+      .catch(() => {});
   }, []);
 
   // Keyboard shortcut
@@ -140,8 +151,18 @@ export function ElementPicker(props: ElementPickerConfig) {
         : formatElementInfo(info);
 
       navigator.clipboard.writeText(text).then(
-        () => toast.success("Element info copied to clipboard"),
-        () => toast.error("Failed to copy to clipboard")
+        async () => {
+          try {
+            const { toast } = await import("sonner");
+            toast.success("Element info copied to clipboard");
+          } catch {}
+        },
+        async () => {
+          try {
+            const { toast } = await import("sonner");
+            toast.error("Failed to copy to clipboard");
+          } catch {}
+        }
       );
 
       deactivate();
@@ -154,6 +175,9 @@ export function ElementPicker(props: ElementPickerConfig) {
       document.removeEventListener("click", onClick, true);
     };
   }, [isActive, deactivate, extractOptions, formatOutput, frameworkInternals]);
+
+  // SSR guard — all hooks must be above this
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <>
@@ -226,10 +250,13 @@ export function ElementPicker(props: ElementPickerConfig) {
           }}
           title="Click or press Escape to deactivate"
         >
-          <Crosshair size={14} />
+          {CrosshairIcon ? <CrosshairIcon size={14} /> : <span style={{ width: 14, height: 14, display: "inline-block" }} />}
           Element Picker
         </button>
       )}
+
+      {/* Toaster for toast notifications (auto-included so users don't need to add it) */}
+      {Toaster && <Toaster />}
     </>,
     document.body
   );

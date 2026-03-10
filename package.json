@@ -26,19 +26,13 @@
     "dev": "tsup --watch",
     "prepublishOnly": "tsup"
   },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18",
+  "dependencies": {
     "lucide-react": ">=0.300",
     "sonner": ">=1.0"
   },
-  "peerDependenciesMeta": {
-    "lucide-react": {
-      "optional": true
-    },
-    "sonner": {
-      "optional": true
-    }
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
@@ -57,9 +51,15 @@
     "inspector",
     "component-hierarchy"
   ],
+  "author": "sultanavtajev",
+  "sideEffects": false,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/developia/element-picker"
+    "url": "https://github.com/sultanavtajev/element-picker"
+  },
+  "homepage": "https://github.com/sultanavtajev/element-picker#readme",
+  "bugs": {
+    "url": "https://github.com/sultanavtajev/element-picker/issues"
   }
 }

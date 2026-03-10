@@ -8,4 +8,7 @@ export default defineConfig({
   clean: true,
   external: ["react", "react-dom", "lucide-react", "sonner"],
   jsx: "automatic",
+  banner: {
+    js: '"use client";',
+  },
 });

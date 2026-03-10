@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(where gh:*)",
+      "Bash(winget install:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Read(//c/Program Files/GitHub CLI/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(export:*)",
+      "Bash(git:*)",
+      "Bash(npm run:*)",
+      "Bash(npm version:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm whoami:*)",
+      "Bash(ls -la \"C:\\\\Kodeprosjekter\\\\element-picker\" | grep -iE \"^-.*\\\\.\\(md|license|txt\\)$\")",
+      "Bash(npm pack:*)",
+      "Bash(grep -n \"use client\" /c/Kodeprosjekter/element-picker/dist/index.js /c/Kodeprosjekter/element-picker/dist/index.cjs 2>/dev/null; echo \"exit: $?\")"
+    ]
+  }
+}

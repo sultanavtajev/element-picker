@@ -1,11 +1,20 @@
+export interface ComponentEntry {
+  name: string;
+  source: string | null; // "file:line" or null
+  key: string | null;
+}
+
 export interface ElementInfo {
+  pageUrl: string;
   reactComponent: string;
+  reactKey: string;
   componentTree: string;
   sourcePath: string;
   sourceConfidence: string;
   tagName: string;
   id: string;
   dataSlot: string;
+  dataTestId: string;
   ariaLabel: string;
   textContent: string;
   cssSelector: string;

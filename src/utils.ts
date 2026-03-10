@@ -1,4 +1,4 @@
-import type { ElementInfo } from "./types";
+import type { ComponentEntry, ElementInfo } from "./types";
 
 // --- React Fiber helpers ---
 
@@ -6,6 +6,7 @@ interface FiberNode {
   return: FiberNode | null;
   type: unknown;
   tag: number;
+  key: string | null;
   stateNode: unknown;
   _debugSource?: {
     fileName: string;
@@ -63,10 +64,15 @@ export const DEFAULT_FRAMEWORK_INTERNALS = [
   "PathnameContextProviderAdapter",
 ] as const;
 
+function normalizeSourcePath(raw: string): string {
+  const srcIdx = raw.indexOf("src/");
+  return srcIdx !== -1 ? raw.slice(srcIdx) : raw;
+}
+
 export function getComponentHierarchy(
   el: Element,
   extraInternals?: string[]
-): string[] {
+): ComponentEntry[] {
   const fiber = getReactFiber(el);
   if (!fiber) return [];
 
@@ -75,7 +81,7 @@ export function getComponentHierarchy(
     ...(extraInternals ?? []),
   ]);
 
-  const components: string[] = [];
+  const components: ComponentEntry[] = [];
   const seen = new Set<string>();
   let current: FiberNode | null = fiber;
   let levels = 0;
@@ -84,26 +90,22 @@ export function getComponentHierarchy(
     const name = getComponentName(current);
     if (name && !seen.has(name) && !internals.has(name)) {
       seen.add(name);
-      components.push(name);
+      let source: string | null = null;
+      if (current._debugSource) {
+        const path = normalizeSourcePath(current._debugSource.fileName);
+        source = `${path}:${current._debugSource.lineNumber}`;
+      }
+      components.push({
+        name,
+        source,
+        key: current.key,
+      });
     }
     current = current.return;
     levels++;
   }
 
   return components;
-}
-
-// --- Temporary: dump fiber debug properties to console ---
-
-export function dumpFiberDebugInfo(el: Element): void {
-  const fiber = getReactFiber(el);
-  if (!fiber) {
-    console.log("[ElementPicker] No fiber found");
-    return;
-  }
-
-  const fiberAny = fiber as unknown as Record<string, unknown>;
-  console.log(`[ElementPicker] DOM fiber _debugStack:`, fiberAny._debugStack);
 }
 
 // --- Source from React _debugSource (dev mode only) ---
@@ -125,9 +127,7 @@ function getDebugSource(
   while (current && levels < 30) {
     const name = getComponentName(current);
     if (name && !internals.has(name) && current._debugSource) {
-      const raw = current._debugSource.fileName;
-      const srcIdx = raw.indexOf("src/");
-      const path = srcIdx !== -1 ? raw.slice(srcIdx) : raw;
+      const path = normalizeSourcePath(current._debugSource.fileName);
       return { path, line: current._debugSource.lineNumber };
     }
     current = current.return;
@@ -324,7 +324,9 @@ export function extractElementInfo(
 ): ElementInfo {
   const text = el.textContent?.trim() ?? "";
   const dataSlot = el.getAttribute("data-slot") || "-";
-  const hierarchy = getComponentHierarchy(el, options?.frameworkInternals);
+  const dataTestId = el.getAttribute("data-testid") || "-";
+  const entries = getComponentHierarchy(el, options?.frameworkInternals);
+  const componentNames = entries.map((e) => e.name);
 
   const componentBasesSet =
     options?.componentBases && options.componentBases.length > 0
@@ -341,7 +343,7 @@ export function extractElementInfo(
     sourceConfidence = "exact";
   } else {
     const inferred = inferSourceFile(
-      hierarchy,
+      componentNames,
       dataSlot,
       componentBasesSet,
       options?.sourcePathPrefix
@@ -350,14 +352,25 @@ export function extractElementInfo(
     sourceConfidence = inferred?.confidence ?? "-";
   }
 
+  // Format component tree with source references
+  const componentTree =
+    entries.length > 0
+      ? entries
+          .map((e) => (e.source ? `${e.name} (${e.source})` : e.name))
+          .join(" > ")
+      : "-";
+
   return {
-    reactComponent: hierarchy.length > 0 ? hierarchy[0] : "-",
-    componentTree: hierarchy.length > 0 ? hierarchy.join(" > ") : "-",
+    pageUrl: typeof window !== "undefined" ? window.location.href : "-",
+    reactComponent: entries.length > 0 ? entries[0].name : "-",
+    reactKey: entries.length > 0 ? (entries[0].key ?? "-") : "-",
+    componentTree,
     sourcePath,
     sourceConfidence,
     tagName: el.tagName.toLowerCase(),
     id: el.id || "-",
     dataSlot,
+    dataTestId,
     ariaLabel: el.getAttribute("aria-label") || "-",
     textContent: text.length > 80 ? text.slice(0, 80) + "..." : text || "-",
     cssSelector: generateSelector(el),
@@ -367,15 +380,25 @@ export function extractElementInfo(
 export function formatElementInfo(info: ElementInfo): string {
   const lines: string[] = [
     "## Element Picker",
+    `- Page: \`${info.pageUrl}\``,
     `- React Component: \`${info.reactComponent}\``,
-    `- Component Tree: \`${info.componentTree}\``,
   ];
+
+  if (info.reactKey !== "-") {
+    lines.push(`- React Key: \`${info.reactKey}\``);
+  }
+
+  lines.push(`- Component Tree: \`${info.componentTree}\``);
 
   if (info.sourcePath !== "-") {
     lines.push(`- Source (${info.sourceConfidence}): \`${info.sourcePath}\``);
   }
 
   lines.push(`- data-slot: \`${info.dataSlot}\``);
+
+  if (info.dataTestId !== "-") {
+    lines.push(`- data-testid: \`${info.dataTestId}\``);
+  }
 
   if (info.id !== "-") {
     lines.push(`- id: \`${info.id}\``);

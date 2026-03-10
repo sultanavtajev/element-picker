@@ -8,7 +8,6 @@ import {
   extractElementInfo,
   formatElementInfo,
   getComponentHierarchy,
-  dumpFiberDebugInfo,
 } from "./utils";
 import type { ElementPickerConfig } from "./types";
 
@@ -117,7 +116,7 @@ export function ElementPicker(props: ElementPickerConfig) {
       const tag = target.tagName.toLowerCase();
       const slot = target.getAttribute("data-slot");
       const hierarchy = getComponentHierarchy(target, frameworkInternals);
-      const component = hierarchy.length > 0 ? hierarchy[0] : null;
+      const component = hierarchy.length > 0 ? hierarchy[0].name : null;
 
       if (component) {
         const slotSuffix = slot ? ` [${slot}]` : "";
@@ -135,7 +134,6 @@ export function ElementPicker(props: ElementPickerConfig) {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      dumpFiberDebugInfo(target);
       const info = extractElementInfo(target, extractOptions);
       const text = formatOutput
         ? formatOutput(info)
